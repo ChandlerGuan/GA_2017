@@ -55,11 +55,11 @@ def import_data(file_name):
     
     return x,y;
 	
-def build_network():
+def build_network(hidden_layer_unit):
     model = keras.models.Sequential()
-    model.add(keras.layers.Dense(64, input_dim=2, activation='relu'))
-    model.add(keras.layers.Dense(64, activation='relu'))
-    model.add(keras.layers.Dense(64, activation='relu'))
+    model.add(keras.layers.Dense(hidden_layer_unit[0], input_dim=2, activation='relu'))
+    model.add(keras.layers.Dense(hidden_layer_unit[1], activation='relu'))
+    model.add(keras.layers.Dense(hidden_layer_unit[2], activation='relu'))
     model.add(keras.layers.Dense(1, activation='sigmoid'))
 
     model.compile(loss='binary_crossentropy',
@@ -67,7 +67,8 @@ def build_network():
                   metrics=['accuracy'])
 
     return model;
-	
+
+#initialize the polulation with gaussian distribution
 def initialization(model,population):
     weights = model.get_weights();
     weight_size = [];
@@ -75,36 +76,102 @@ def initialization(model,population):
         weight_size.append(weights[i].shape);
         
     candidate = [];
+    fitness = [];
     for i in range(population):
         candidate.append([]);
+        fitness.append(0);
         for j in range(len(weight_size)):
+#            initialize with gaussian distribution
             candidate[i].append(np.random.randn(*weight_size[j]));
     
-    return candidate;
+    return candidate,fitness;
 
-def value_function(model,weights):
+#calculate the fitness value based on MSE
+def value_function(x,y,model,weights):
     model.set_weights(weights);
-    return model.evaluate(x,y,batch_size=4);
+    return model.evaluate(x,y,verbose=0)[0];
+    
+def select_with_probability(shape,probability):
+    return np.random.choice(2,np.prod(shape),p=[1-probability,probability]).reshape(shape);
+    
+def selection(candidates,fitness):
+    probability = np.exp(-np.asarray(fitness));
+    probability = probability/np.sum(probability);
+    choice = np.random.choice(len(fitness),len(fitness),p=probability);
+    next_fitness = np.asarray(fitness)[choice];
+    next_generation = [];
+    for i in range(len(choice)):
+        next_generation.append(candidates[choice[i]]);
+    return next_generation,next_fitness;
+    
+def crossover(candidates,fitness,crossover_rate):
+    next_generation = [];
+    next_fitness = [];
+    for i in range(len(fitness)):
+        alpha = fitness[i]/(fitness[i]+fitness[(i+1)%len(fitness)]);
+        tmp_weight = [];
+        for j in range(len(candidates[0])):
+            crossover_position = select_with_probability(candidates[i][j].shape,crossover_rate);
+            n = np.multiply(candidates[i][j],1-crossover_position);
+            p = np.multiply(alpha*candidates[i][j]+(1-alpha)*candidates[(i+1)%len(fitness)][j],crossover_position);
+            tmp_weight.append(n+p);
+        next_generation.append(tmp_weight);
+#        next_generation.append(map(lambda x,y:x+y,alpha*candidates[i],(1-alpha)*candidates[i]));
+        next_fitness.append(0.5*(fitness[i]+fitness[(i+1)%len(fitness)]));
+    return next_generation,next_fitness;
+    
+def mutation(candidates,fitness,mutation_rate,learning_rate):
+    pass;
 	
 if __name__ == "__main__":
-    max_generation = 100;
+    max_generation = 10;
     local_search_iter = 5;
     population = 4;
+    crossover_rate = 1;
+    mutation_rate = 0.05;
+    learning_rate = 0.01;
 
+    hidden_layer_unit = [2,2,2];
     batch_size=4;
     validation_split=0.1;
     
     x,y = import_data('two_spiral.dat');
-    model = build_network();
+    model = build_network(hidden_layer_unit);
     
-	# candidates = initialization(model,population);
-	# print(value_function(model,candidates[0]))[0];
+#    =====Genetic Algorithm=====
+    candidates,fitness = initialization(model,population);
+    
+#    1.fitness calculation
+    for i in range(max_generation):
+        for i in range(population):
+            fitness[i] = value_function(x,y,model,candidates[i]);
+    
+
+#    2.selection
+    next_generation, next_fitness = selection(candidates,fitness);
+
+#    3.crossover
+    next_generation, next_fitness = crossover(next_generation,next_fitness,crossover_rate);
+    
+    
+    
+    
+    
+    
+            
+            
+    
+    
+    
+    
+    
+#    print(value_function(x,y,model,candidates[0]));
     
     
 #    for i in range(10):
 #        result = model.fit(x,y,epochs=i+1,initial_epoch=i,batch_size=batch_size,validation_split=validation_split);
-    model.fit(x,y,epochs=1000);
-    plot_plain(model,model.get_weights());
+##    model.fit(x,y,epochs=1000);
+#        plot_plain(model,model.get_weights());
     
     
     

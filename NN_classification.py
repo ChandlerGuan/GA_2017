@@ -92,7 +92,7 @@ def value_function(x,y,model,weights):
     model.set_weights(weights);
     return model.evaluate(x,y,verbose=0)[0];
     
-def population_fitness(candidates,x,y,model):
+def population_fitness(candidates,x,y,model,local_search=True):
     fitness = [];
     for i in range(len(candidates)):
         fitness.append(value_function(x,y,model,candidates[i]));
@@ -143,7 +143,8 @@ def mutation(candidates,fitness,mutation_rate,learning_rate):
             tmp_weight.append(np.add(mutation_amount,candidates[i][j]));
         next_generation.append(tmp_weight);
         next_fitness.append(fitness[i])
-    return next_generation,next_fitness;         
+    return next_generation,next_fitness;
+    
         
 	
 if __name__ == "__main__":
@@ -180,7 +181,6 @@ if __name__ == "__main__":
         
     #    3.crossover
         crossover_generation,crossover_fitness = crossover(next_generation,next_fitness,crossover_rate);
-        crossover_fitness = population_fitness(crossover_generation,x,y,model);
         
 #        print(crossover_fitness)
         

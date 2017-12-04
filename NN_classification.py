@@ -83,6 +83,7 @@ def initialization(model,population):
         for j in range(len(weight_size)):
 #            initialize with gaussian distribution
             candidate[i].append(np.random.randn(*weight_size[j]));
+#            candidate[i].append(np.ones(weight_size[j])*(i+1))
     
     return candidate,fitness;
 
@@ -121,17 +122,30 @@ def crossover(candidates,fitness,crossover_rate):
     return next_generation,next_fitness;
     
 def mutation(candidates,fitness,mutation_rate,learning_rate):
-    pass;
+    next_generation = [];
+    next_fitness = [];
+    for i in range(len(candidates)):
+        probability = 1-np.exp(-fitness[i]);
+        tmp_weight = [];
+        for j in range(len(candidates[0])):
+            mutation_position = select_with_probability(candidates[i][j].shape,mutation_rate);
+            mutation_amount = np.multiply(np.random.randn(*candidates[i][j].shape),candidates[i][j])*learning_rate*probability;
+            mutation_amount = np.multiply(mutation_amount,mutation_position);
+            tmp_weight.append(np.add(mutation_amount,candidates[i][j]));
+        next_generation.append(tmp_weight);
+        next_fitness.append(fitness[i])
+    return next_generation,next_fitness;         
+        
 	
 if __name__ == "__main__":
     max_generation = 10;
     local_search_iter = 5;
-    population = 4;
-    crossover_rate = 1;
-    mutation_rate = 0.05;
-    learning_rate = 0.01;
+    population = 64;
+    crossover_rate = 0.3;
+    mutation_rate = 0.3;
+    learning_rate = 0.1;
 
-    hidden_layer_unit = [2,2,2];
+    hidden_layer_unit = [64,64,64];
     batch_size=4;
     validation_split=0.1;
     
@@ -141,30 +155,26 @@ if __name__ == "__main__":
 #    =====Genetic Algorithm=====
     candidates,fitness = initialization(model,population);
     
+    for g in range(max_generation):
 #    1.fitness calculation
-    for i in range(max_generation):
-        for i in range(population):
-            fitness[i] = value_function(x,y,model,candidates[i]);
+        for i in range(max_generation):
+            for i in range(population):
+                fitness[i] = value_function(x,y,model,candidates[i]);
+                
+        print("iter: {:d}, best loss: {:f}".format(g,np.min(fitness)))
+        
+        elite = candidates[np.argmin(fitness)]
+    #    2.selection
+        next_generation, next_fitness = selection(candidates,fitness);
     
-
-#    2.selection
-    next_generation, next_fitness = selection(candidates,fitness);
-
-#    3.crossover
-    next_generation, next_fitness = crossover(next_generation,next_fitness,crossover_rate);
-    
-    
-    
-    
-    
-    
-            
-            
-    
-    
-    
-    
-    
+        
+    #    3.crossover
+        next_generation, next_fitness = crossover(next_generation,next_fitness,crossover_rate);
+        
+    #    4.mutation
+        candidates,fitness = mutation(candidates,fitness,mutation_rate,learning_rate)
+        
+        candidates[0]=elite;
 #    print(value_function(x,y,model,candidates[0]));
     
     

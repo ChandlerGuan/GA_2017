@@ -92,11 +92,19 @@ def value_function(x,y,model,weights):
     model.set_weights(weights);
     return model.evaluate(x,y,verbose=0)[0];
     
-def population_fitness(candidates,x,y,model,local_search=True):
+def population_fitness(candidates,x,y,model,local_search=True,batch_size=4,local_search_iter=1):
     fitness = [];
-    for i in range(len(candidates)):
-        fitness.append(value_function(x,y,model,candidates[i]));
-    return fitness;
+    next_generation = [];
+    if (local_search):
+        for i in range(len(candidates)):
+            model.set_weights(candidates[i]);
+            fitness.append(np.average(model.fit(x,y,epochs=local_search_iter,batch_size=batch_size,verbose=0).history['loss']));
+            next_generation.append(model.get_weights());
+    else:
+        for i in range(len(candidates)):
+            fitness.append(value_function(x,y,model,candidates[i]));
+            next_generation.append(candidates[i]);
+    return next_generation,fitness;
     
 def select_with_probability(shape,probability):
     return np.random.choice(2,np.prod(shape),p=[1-probability,probability]).reshape(shape);
@@ -137,8 +145,8 @@ def mutation(candidates,fitness,mutation_rate,learning_rate):
         tmp_weight = [];
         for j in range(len(candidates[0])):
             mutation_position = select_with_probability(candidates[i][j].shape,mutation_rate);
-#            mutation_amount = np.multiply(np.random.randn(*candidates[i][j].shape),candidates[i][j])*learning_rate*probability;
-            mutation_amount = np.multiply(np.random.randn(*candidates[i][j].shape),candidates[i][j])*learning_rate;            
+            mutation_amount = np.multiply(np.random.randn(*candidates[i][j].shape),candidates[i][j])*learning_rate*probability;
+#            mutation_amount = np.multiply(np.random.randn(*candidates[i][j].shape),candidates[i][j])*learning_rate;            
             mutation_amount = np.multiply(mutation_amount,mutation_position);
             tmp_weight.append(np.add(mutation_amount,candidates[i][j]));
         next_generation.append(tmp_weight);
@@ -148,12 +156,12 @@ def mutation(candidates,fitness,mutation_rate,learning_rate):
         
 	
 if __name__ == "__main__":
-    max_generation = 10000;
-    local_search_iter = 5;
-    population = 128;
-    crossover_rate = 0.3;
-    mutation_rate = 0.3;
-    learning_rate = 0.1;
+    max_generation = 1000;
+    local_search_iter = 1;
+    population = 2;
+    crossover_rate = 0.1;
+    mutation_rate = 0.1;
+    learning_rate = 0.01;
 
     hidden_layer_unit = [64,64,64];
     batch_size=4;
@@ -167,12 +175,14 @@ if __name__ == "__main__":
     
     for g in range(max_generation):
 #    1.fitness calculation
-        fitness = population_fitness(candidates,x,y,model);
+        candidates,fitness = population_fitness(candidates,x,y,model,local_search=True,batch_size=batch_size,local_search_iter=local_search_iter);
                 
-        print("iter: {:d}, best loss: {:f}".format(g,np.min(fitness)))
+        elite = candidates[np.argmin(fitness)];
+        
+        print("iter: {:d}, best loss: {:.20f}".format(g,np.min(fitness)))
 #        print(fitness)        
         
-        elite = candidates[np.argmin(fitness)]
+        
     #    2.selection
         next_generation, next_fitness = selection(candidates,fitness);
         

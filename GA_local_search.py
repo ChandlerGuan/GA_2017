@@ -8,14 +8,14 @@ Created on Mon Dec  4 13:24:40 2017
 from NN_classification import *;
 
 if __name__ == "__main__":
-    max_generation = 10000;
-    local_search_iter = 5;
-    population = 64;
-    crossover_rate = 0.3;
-    mutation_rate = 0.3;
-    learning_rate = 0.5;
+    max_generation = 1000;
+    local_search_iter = 1;
+    population = 2;
+    crossover_rate = 0.1;
+    mutation_rate = 0.1;
+    learning_rate = 0.01;
 
-    hidden_layer_unit = [64,64,64];
+    hidden_layer_unit = [10,10,10];
     batch_size=4;
     validation_split=0.1;
     
@@ -27,42 +27,19 @@ if __name__ == "__main__":
     
     for g in range(max_generation):
 #    1.fitness calculation
-        for i in range(population):
-            fitness[i] = value_function(x,y,model,candidates[i]);
+        candidates,fitness = population_fitness(candidates,x,y,model,local_search=True,batch_size=batch_size,local_search_iter=local_search_iter);
                 
-        print("iter: {:d}, best loss: {:f}".format(g,np.min(fitness)))
+        elite = candidates[np.argmin(fitness)];
         
-        elite = candidates[np.argmin(fitness)]
+        print("iter: {:d}, best loss: {:.20f}".format(g,np.min(fitness)))             
+        
     #    2.selection
         next_generation, next_fitness = selection(candidates,fitness);
-    
-        
+                
     #    3.crossover
-        next_generation, next_fitness = crossover(next_generation,next_fitness,crossover_rate);
+        crossover_generation,crossover_fitness = crossover(next_generation,next_fitness,crossover_rate);
         
     #    4.mutation
-        candidates,fitness = mutation(candidates,fitness,mutation_rate,learning_rate)
+        candidates,fitness = mutation(crossover_generation,crossover_fitness,mutation_rate,learning_rate)
         
         candidates[0]=elite;
-        candidates[int(3/4*population)]=elite
-        candidates[int(1/2*population)]=elite
-        candidates[int(1/4*population)]=elite
-#    print(value_function(x,y,model,candidates[0]));
-    
-    
-#    for i in range(10):
-#        result = model.fit(x,y,epochs=i+1,initial_epoch=i,batch_size=batch_size,validation_split=validation_split);
-##    model.fit(x,y,epochs=1000);
-#        plot_plain(model,model.get_weights());
-    
-    
-    
-	# for i in range(max_generation):
-		# weights = model.get_weights();
-		# for j in range(len(weights)):
-			# print(weights[j].shape);
-		# break;
-		
-		# model.set_weights(weights);
-		
-		# model.fit(x,y,epochs=local_search_iter,batch_size=batch_size,validation_split=validation_split);

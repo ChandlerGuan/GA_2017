@@ -6,12 +6,20 @@ import matplotlib.pyplot as plt
 
 random.seed(28)
 	
-def plot_scatter(data):
+def plot_scatter(data,img_name):
 #    call example
 #    plot_scatter(np.concatenate((x,y.reshape((y.shape[0],1))),axis=1));
-    plt.scatter(data[data[:,2]>0.5,0],data[data[:,2]>0.5,1],marker='x',color='r');
-    plt.scatter(data[data[:,2]<0.5,0],data[data[:,2]<0.5,1],marker='o',color='b');
-    plt.show();
+    plt.scatter(data[data[:,2]>0.5,0],data[data[:,2]>0.5,1],marker='x',color='r',label='y=1');
+    plt.scatter(data[data[:,2]<0.5,0],data[data[:,2]<0.5,1],marker='o',color='b',label='y=0');
+#    fig = plt.figure()
+#    fig.savefig('transparent.png',transparent=True)
+
+    plt.xlabel('x1');
+    plt.ylabel('x2')
+#    plt.legend()
+    plt.savefig(img_name,transparent=True);
+#    plt.show();
+    plt.clf()
 
 def generate_plain_vector(threshold=0.5,interval=0.05):
     x_axis,y_axis = np.meshgrid(np.arange(-threshold,threshold,interval),
@@ -23,10 +31,10 @@ def generate_plain_vector(threshold=0.5,interval=0.05):
     return x;
     
     
-def plot_plain(model,weight):
+def plot_plain(model,weight,img_name):
     x = generate_plain_vector(threshold=0.35,interval=0.01);
     y = model.predict(x,batch_size=4,verbose=0);
-    plot_scatter(np.concatenate((x,y),axis=1))
+    plot_scatter(np.concatenate((x,y),axis=1),img_name)
 
 def import_data(file_name):
     x = [];
@@ -58,8 +66,8 @@ def import_data(file_name):
 def build_network(hidden_layer_unit):
     model = keras.models.Sequential()
     model.add(keras.layers.Dense(hidden_layer_unit[0], input_dim=2, activation='relu'))
-    model.add(keras.layers.Dense(hidden_layer_unit[1], activation='relu'))
-    model.add(keras.layers.Dense(hidden_layer_unit[2], activation='relu'))
+    for i in range(1,len(hidden_layer_unit)):
+        model.add(keras.layers.Dense(hidden_layer_unit[i], activation='relu'))
     model.add(keras.layers.Dense(1, activation='sigmoid'))
 
     model.compile(loss='binary_crossentropy',
@@ -82,6 +90,7 @@ def initialization(model,population):
         fitness.append(0);
         for j in range(len(weight_size)):
 #            initialize with gaussian distribution
+#            candidate[i].append(0.1*np.random.randn(*weight_size[j]));
             candidate[i].append(np.random.randn(*weight_size[j]));
 #            candidate[i].append(np.ones(weight_size[j])*(i+1))
     
